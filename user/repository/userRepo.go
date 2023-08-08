@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"log"
+
 	"gorm.io/gorm"
 	"main.go/model"
 )
@@ -21,6 +23,15 @@ func (r *UserRepo) FindAll() ([]*model.User, error) {
 		return nil, err
 	}
 	return users, nil
+}
+
+func (r *UserRepo) WithTx(txHandle *gorm.DB) *UserRepo {
+	if txHandle == nil {
+		log.Println("no transaction db found")
+		return r
+	}
+	r.DB = txHandle
+	return r
 }
 
 func (r *UserRepo) ReduceBalance(userId int, amount int) error {

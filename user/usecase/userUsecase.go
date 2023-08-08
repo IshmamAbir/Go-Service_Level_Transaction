@@ -1,6 +1,9 @@
 package usecase
 
 import (
+	"math/rand"
+
+	"gorm.io/gorm"
 	"main.go/model"
 	"main.go/product/usecase"
 	"main.go/requests"
@@ -38,10 +41,32 @@ func (u *UserUsecase) ReduceBalance(userId int, productId int, productQuantity i
 
 // -------------------
 
+func (u *UserUsecase) WithTx(txHandle *gorm.DB) UserUsecase {
+	u.UserRepo = *u.UserRepo.WithTx(txHandle)
+	return *u
+}
+
 func (u *UserUsecase) OrderProduct(orderRequest requests.OrderRequest) error {
 	// step 1: add to shopping cart
+	shoppingCart := model.ShoppingCart{}
+	shoppingCart.Id = rand.Intn(100)
+	shoppingCart.UserId = orderRequest.UserId
+	shoppingCart.ProductId = orderRequest.ProductId
+	shoppingCart.ProductAmount = orderRequest.Quantity
+	if err := u.ShoppingCartUsecase.AddToShoppingCart(&shoppingCart); err != nil {
+		return err
+	}
 	// step 2: reduce product stock
+	if err := u.ProductUsecase.ReduceStockAmount(orderRequest.ProductId, orderRequest.Quantity); err != nil {
+		return err
+	}
 	// step 3: reduce user balance
-	// step 4: create order
+	product, err := u.ProductUsecase.FindById(orderRequest.ProductId)
+	if err != nil {
+		return err
+	}
+	if err := u.UserRepo.ReduceBalance(orderRequest.UserId, (product.Price * orderRequest.Quantity)); err != nil {
+		return err
+	}
 	return nil
 }
