@@ -1,11 +1,11 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"main.go/product/usecase"
+	"main.go/response"
 )
 
 type ProductHandler struct {
@@ -23,8 +23,10 @@ func NewProductHandler(productUsecase usecase.ProductUsecase, router *mux.Router
 func (h *ProductHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	products, err := h.ProductUsecase.FindAll()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		// http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.Render(w, err, nil)
 		return
 	}
-	json.NewEncoder(w).Encode(products)
+	// json.NewEncoder(w).Encode(products)
+	response.Render(w, nil, products)
 }

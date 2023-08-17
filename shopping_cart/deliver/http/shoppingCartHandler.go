@@ -1,10 +1,10 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"main.go/response"
 	"main.go/shopping_cart/usecase"
 )
 
@@ -23,8 +23,10 @@ func NewShoppingCartHandler(shoppingCartUsecase usecase.ShoppingCartUsecase, rou
 func (h *ShoppingCartHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	shoppingCarts, err := h.ShoppingCartUsecase.FindAll()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		// http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.Render(w, err, nil)
 		return
 	}
-	json.NewEncoder(w).Encode(shoppingCarts)
+	// json.NewEncoder(w).Encode(shoppingCarts)
+	response.Render(w, nil, shoppingCarts)
 }

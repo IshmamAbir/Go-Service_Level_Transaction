@@ -3,6 +3,8 @@ package repository
 import (
 	"log"
 
+	CommonError "main.go/errors"
+
 	"gorm.io/gorm"
 	"main.go/model"
 )
@@ -17,15 +19,15 @@ func NewUserRepo(db *gorm.DB) *UserRepo {
 	}
 }
 
-func (r *UserRepo) FindAll() ([]*model.User, error) {
+func (r UserRepo) FindAll() ([]*model.User, error) {
 	var users []*model.User
 	if err := r.DB.Find(&users).Error; err != nil {
-		return nil, err
+		return nil, CommonError.ErrInternalServerError
 	}
 	return users, nil
 }
 
-func (r *UserRepo) WithTx(txHandle *gorm.DB) *UserRepo {
+func (r UserRepo) WithTx(txHandle *gorm.DB) UserRepo {
 	if txHandle == nil {
 		log.Println("no transaction db found")
 		return r
@@ -34,14 +36,14 @@ func (r *UserRepo) WithTx(txHandle *gorm.DB) *UserRepo {
 	return r
 }
 
-func (r *UserRepo) ReduceBalance(userId int, amount int) error {
+func (r UserRepo) ReduceBalance(userId int, amount int) error {
 	user := model.User{}
 	if err := r.DB.First(&user, userId).Error; err != nil {
-		return err
+		return CommonError.ErrNotFound
 	}
 	user.Balance -= amount
 	if err := r.DB.Save(&user).Error; err != nil {
-		return err
+		return CommonError.ErrInternalServerError
 	}
 	return nil
 }

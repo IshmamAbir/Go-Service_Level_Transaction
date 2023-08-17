@@ -1,8 +1,6 @@
 package usecase
 
 import (
-	"math/rand"
-
 	"gorm.io/gorm"
 	"main.go/model"
 	"main.go/product/usecase"
@@ -30,7 +28,7 @@ func (u *UserUsecase) FindAll() ([]*model.User, error) {
 	return u.UserRepo.FindAll()
 }
 
-func (u *UserUsecase) ReduceBalance(userId int, productId int, productQuantity int) error {
+func (u UserUsecase) ReduceBalance(userId int, productId int, productQuantity int) error {
 	product, err := u.ProductUsecase.FindById(productId)
 	if err != nil {
 		return err
@@ -41,26 +39,27 @@ func (u *UserUsecase) ReduceBalance(userId int, productId int, productQuantity i
 
 // -------------------
 
-func (u *UserUsecase) WithTx(txHandle *gorm.DB) UserUsecase {
-	u.UserRepo = *u.UserRepo.WithTx(txHandle)
-	return *u
+func (u UserUsecase) WithTx(txHandle *gorm.DB) UserUsecase {
+	u.UserRepo = u.UserRepo.WithTx(txHandle)
+	u.ProductUsecase = u.ProductUsecase.WithTx(txHandle)
+	u.ShoppingCartUsecase = u.ShoppingCartUsecase.WithTx(txHandle)
+	return u
 }
 
-func (u *UserUsecase) OrderProduct(orderRequest requests.OrderRequest) error {
-	// step 1: add to shopping cart
+func (u UserUsecase) OrderProduct(orderRequest requests.OrderRequest) error {
+	// step 1 (business logic): add to shopping cart
 	shoppingCart := model.ShoppingCart{}
-	shoppingCart.Id = rand.Intn(100)
 	shoppingCart.UserId = orderRequest.UserId
 	shoppingCart.ProductId = orderRequest.ProductId
 	shoppingCart.ProductAmount = orderRequest.Quantity
 	if err := u.ShoppingCartUsecase.AddToShoppingCart(&shoppingCart); err != nil {
 		return err
 	}
-	// step 2: reduce product stock
+	// step 2 (business logic): reduce product stock
 	if err := u.ProductUsecase.ReduceStockAmount(orderRequest.ProductId, orderRequest.Quantity); err != nil {
 		return err
 	}
-	// step 3: reduce user balance
+	// step 3 (business logic): reduce user balance
 	product, err := u.ProductUsecase.FindById(orderRequest.ProductId)
 	if err != nil {
 		return err

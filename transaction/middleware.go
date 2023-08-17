@@ -8,6 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// type contextKey string
+
+// const (
+// 	txKey contextKey = "db_tx"
+// )
+
 func DBTransactionMiddleware(db *gorm.DB, handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		txHandle := db.Begin()
@@ -16,38 +22,40 @@ func DBTransactionMiddleware(db *gorm.DB, handler http.HandlerFunc) http.Handler
 		defer func() {
 			if r := recover(); r != nil {
 				txHandle.Rollback()
+				log.Panic(r)
 			}
 		}()
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "db_trx", txHandle)
+		txKey := "db_tx"
+		ctx = context.WithValue(ctx, txKey, txHandle)
 
 		r = r.WithContext(ctx)
 
 		// Create a custom ResponseWriter that captures the status
-		customWriter := &responseWriter{ResponseWriter: w}
+		customWriter := &ResponseWriter{ResponseWriter: w}
 		handler(customWriter, r)
 
-		status := customWriter.status
+		status := customWriter.Status
 		if StatusInList(status, []int{http.StatusOK, http.StatusCreated}) {
 			log.Print("committing transactions")
 			if err := txHandle.Commit().Error; err != nil {
 				log.Print("trx commit error: ", err)
 			}
 		} else {
-			log.Print("rolling back transaction due to status code: ", status)
+			log.Print("rolling back transaction due to an error ")
 			txHandle.Rollback()
 		}
 	}
 }
 
-type responseWriter struct {
+type ResponseWriter struct {
 	http.ResponseWriter
-	status int
+	Status int
 }
 
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.status = code
+func (rw *ResponseWriter) WriteHeader(code int) {
+	rw.Status = code
 	rw.ResponseWriter.WriteHeader(code)
 }
 

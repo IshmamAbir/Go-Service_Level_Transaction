@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	CommonError "main.go/errors"
+	"main.go/response"
+
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 	"main.go/requests"
@@ -23,27 +26,30 @@ func NewUserHandler(userUsecase usecase.UserUsecase, router *mux.Router, db *gor
 	}
 	subroute := router.PathPrefix("/users").Subrouter()
 	subroute.HandleFunc("/", handler.GetAll).Methods("GET")
-	subroute.HandleFunc("/order_product", transaction.DBTransactionMiddleware(handler.Db, handler.OrderProduct)).Methods("POST")
+	subroute.HandleFunc("/order-product", transaction.DBTransactionMiddleware(handler.Db, handler.OrderProduct)).Methods("POST")
 }
 
 func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	users, err := h.userUsecase.FindAll()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response.Render(w, CommonError.ErrInternalServerError, nil)
 		return
 	}
-	json.NewEncoder(w).Encode(users)
+	response.Render(w, nil, users)
 }
 
 func (h *UserHandler) OrderProduct(w http.ResponseWriter, r *http.Request) {
 	println("order product")
 
+	txHandle := r.Context().Value("db_tx").(*gorm.DB)
+
 	orderRequest := requests.OrderRequest{}
 	json.NewDecoder(r.Body).Decode(&orderRequest)
-	err := h.userUsecase.OrderProduct(orderRequest)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := h.userUsecase.WithTx(txHandle).OrderProduct(orderRequest); err != nil {
+		response.Render(w, err, nil)
+		// w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode("order successful !")
+	w.WriteHeader(http.StatusOK)
+	response.Render(w, nil, "order taken successfully !")
 }
