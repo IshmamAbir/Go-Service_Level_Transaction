@@ -26,7 +26,7 @@ func NewUserHandler(userUsecase usecase.UserUsecase, router *mux.Router, db *gor
 	}
 	subroute := router.PathPrefix("/users").Subrouter()
 	subroute.HandleFunc("/", handler.GetAll).Methods("GET")
-	subroute.HandleFunc("/order-product", transaction.DBTransactionMiddleware(handler.Db, handler.OrderProduct)).Methods("POST")
+	subroute.HandleFunc("/order-product", transaction.DBTransactionMiddleware(handler.Db, handler.PurchaseProduct)).Methods("POST")
 }
 
 func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -38,14 +38,14 @@ func (h *UserHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	response.Render(w, nil, users)
 }
 
-func (h *UserHandler) OrderProduct(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) PurchaseProduct(w http.ResponseWriter, r *http.Request) {
 	println("order product")
 
-	txHandle := r.Context().Value("db_tx").(*gorm.DB)
+	txHandle := transaction.GetTxKey(r.Context())
 
 	orderRequest := requests.OrderRequest{}
 	json.NewDecoder(r.Body).Decode(&orderRequest)
-	if err := h.userUsecase.WithTx(txHandle).OrderProduct(orderRequest); err != nil {
+	if err := h.userUsecase.WithTx(txHandle).PurchaseProduct(orderRequest); err != nil {
 		response.Render(w, err, nil)
 		// w.WriteHeader(http.StatusInternalServerError)
 		return

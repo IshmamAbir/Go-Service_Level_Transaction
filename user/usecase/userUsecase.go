@@ -46,7 +46,7 @@ func (u UserUsecase) WithTx(txHandle *gorm.DB) UserUsecase {
 	return u
 }
 
-func (u UserUsecase) OrderProduct(orderRequest requests.OrderRequest) error {
+func (u UserUsecase) PurchaseProduct(orderRequest requests.OrderRequest) error {
 	// step 1 (business logic): add to shopping cart
 	shoppingCart := model.ShoppingCart{}
 	shoppingCart.UserId = orderRequest.UserId

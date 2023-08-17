@@ -8,11 +8,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// type contextKey string
+type contextKey string
 
-// const (
-// 	txKey contextKey = "db_tx"
-// )
+const txKey contextKey = "db_tx"
 
 func DBTransactionMiddleware(db *gorm.DB, handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -26,14 +24,13 @@ func DBTransactionMiddleware(db *gorm.DB, handler http.HandlerFunc) http.Handler
 			}
 		}()
 
-		ctx := r.Context()
-		txKey := "db_tx"
-		ctx = context.WithValue(ctx, txKey, txHandle)
-
+		ctx := SetTxKey(r.Context(), txHandle)
 		r = r.WithContext(ctx)
 
 		// Create a custom ResponseWriter that captures the status
-		customWriter := &ResponseWriter{ResponseWriter: w}
+		customWriter := &ResponseWriter{
+			ResponseWriter: w,
+		}
 		handler(customWriter, r)
 
 		status := customWriter.Status
@@ -47,6 +44,14 @@ func DBTransactionMiddleware(db *gorm.DB, handler http.HandlerFunc) http.Handler
 			txHandle.Rollback()
 		}
 	}
+}
+
+func SetTxKey(ctx context.Context, txHandle *gorm.DB) context.Context {
+	return context.WithValue(ctx, txKey, txHandle)
+}
+
+func GetTxKey(ctx context.Context) *gorm.DB {
+	return ctx.Value(txKey).(*gorm.DB)
 }
 
 type ResponseWriter struct {
