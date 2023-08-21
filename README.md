@@ -74,6 +74,11 @@ txHandleErr := userUsecase.WithTx(txHandle)
 purchaseErr := userUsecase.PurchaseProduct(orderRequest);
 ```
 
+## Reference
+
+- [Using Gin Framework](https://articles.wesionary.team/implement-database-transactions-with-repository-pattern-golang-gin-and-gorm-application-907517fd0743)
+- [Instructions in Japanese | 日本語で README](README-JP.md)
+
 ## Authors
 
 - [@IshmamAbir](https://www.github.com/IshmamAbir)
