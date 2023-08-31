@@ -7,6 +7,7 @@ import (
 	"main.go/database"
 	_ProductUsecase "main.go/product/usecase"
 	_ShoppingCartUsecase "main.go/shopping_cart/usecase"
+	"main.go/transaction"
 	_UserUsecase "main.go/user/usecase"
 
 	_ProductHandler "main.go/product/deliver/http"
@@ -30,10 +31,11 @@ func main() {
 	userRepo := _UserRepo.NewUserRepo(db)
 	productRepo := _ProductRepo.NewProductsRepo(db)
 	shoppingCartRepo := _ShoppingCartRepo.NewShoppingCartRepo(db)
+	uw := transaction.NewUW(db)
 
 	productUsecase := _ProductUsecase.NewProductUsecase(*productRepo)
 	shoppingCartUsecase := _ShoppingCartUsecase.NewShoppingCartUsecase(*shoppingCartRepo)
-	userUsecase := _UserUsecase.NewUserUsecase(*userRepo, *productUsecase, *shoppingCartUsecase)
+	userUsecase := _UserUsecase.NewUserUsecase(*userRepo, *productUsecase, *productRepo, uw, *shoppingCartUsecase)
 
 	_ProductHandler.NewProductHandler(*productUsecase, router)
 	_ShoppingCartHandler.NewShoppingCartHandler(*shoppingCartUsecase, router)

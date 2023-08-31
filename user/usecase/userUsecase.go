@@ -1,27 +1,67 @@
 package usecase
 
+// app 1
+
 import (
+	"context"
+	"strconv"
+
 	"gorm.io/gorm"
 	"main.go/model"
+	pr "main.go/product/repository"
 	"main.go/product/usecase"
 	"main.go/requests"
 	shoppingCartUsecase "main.go/shopping_cart/usecase"
+	"main.go/transaction"
 	"main.go/user/repository"
 )
 
 type UserUsecase struct {
 	UserRepo            repository.UserRepo
 	ProductUsecase      usecase.ProductUsecase
+	ProductRepo         pr.ProductRepo
+	UW                  *transaction.UoW
 	ShoppingCartUsecase shoppingCartUsecase.ShoppingCartUsecase
 }
 
 func NewUserUsecase(userRepo repository.UserRepo,
 	productUsecase usecase.ProductUsecase,
-	shoppingCartUsecase shoppingCartUsecase.ShoppingCartUsecase) *UserUsecase {
+	prepo pr.ProductRepo,
+	uw *transaction.UoW,
+	shoppingCartUsecase shoppingCartUsecase.ShoppingCartUsecase,
+) *UserUsecase {
 	return &UserUsecase{
 		UserRepo:       userRepo,
 		ProductUsecase: productUsecase,
+		ProductRepo:    prepo,
+		UW:             uw,
 	}
+}
+
+// app 1
+// delete user and associated products
+func (uc *UserUsecase) Delete1(ctx context.Context, id string) error {
+	uc.UW.WithTx(ctx, func(uw *transaction.UoW) error {
+		err := uw.UserRepo().Delete(ctx, id)
+		if err != nil {
+			return err
+		}
+		ps, err := uw.UserRepo().ProductsByID(id)
+		if err != nil {
+			return err
+		}
+		var pids []string
+		for _, p := range ps {
+			pids = append(pids, strconv.Itoa(p.Id))
+		}
+		err = uw.ProductRepo().DeleteByIDs(pids)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	return nil
 }
 
 func (u *UserUsecase) FindAll() ([]*model.User, error) {
