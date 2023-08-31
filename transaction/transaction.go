@@ -6,11 +6,52 @@ import (
 	"net/http"
 
 	"gorm.io/gorm"
+	pr "main.go/product/repository"
+	ur "main.go/user/repository"
 )
 
 type contextKey string
 
 const txKey contextKey = "db_tx"
+
+type UoW struct {
+	tx *gorm.DB
+}
+
+func (uw *UoW) UserRepo() *ur.UserRepo {
+	return ur.NewUserRepo(uw.tx)
+}
+
+func (uw *UoW) ProductRepo() *pr.ProductRepo {
+	return pr.NewProductsRepo(uw.tx)
+}
+
+func NewUW(db *gorm.DB) *UoW {
+	return &UoW{db}
+}
+
+func (uw *UoW) WithTx(ctx context.Context, fn func(*UoW) error) error {
+	// begin a transaction
+	tx := uw.tx.Begin()
+
+	var done bool
+
+	defer func() {
+		if !done {
+			tx.Rollback()
+		}
+	}()
+
+	err := fn(uw)
+	if err != nil {
+		log.Println(err)
+	}
+
+	done = true
+	// Or commit the transaction
+	tx.Commit()
+	return nil
+}
 
 func DBTransactionMiddleware(db *gorm.DB, handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -20,7 +61,7 @@ func DBTransactionMiddleware(db *gorm.DB, handler http.HandlerFunc) http.Handler
 		defer func() {
 			if r := recover(); r != nil {
 				txHandle.Rollback()
-				log.Panic(r)
+				log.Print(r)
 			}
 		}()
 

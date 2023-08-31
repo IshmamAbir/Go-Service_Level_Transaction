@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"log"
 
 	CommonError "main.go/errors"
@@ -25,6 +26,22 @@ func (r UserRepo) FindAll() ([]*model.User, error) {
 		return nil, CommonError.ErrInternalServerError
 	}
 	return users, nil
+}
+
+func (r UserRepo) ProductsByID(id string) ([]*model.Product, error) {
+	var prods []*model.Product
+	if err := r.DB.Where("user_id=?", id).Find(&prods).Error; err != nil {
+		return nil, CommonError.ErrInternalServerError
+	}
+	return prods, nil
+}
+
+func (r UserRepo) Delete(ctx context.Context, id string) error {
+	var user *model.User
+	if err := r.DB.Where("id=?", id).Delete(user).Error; err != nil {
+		return CommonError.ErrInternalServerError
+	}
+	return nil
 }
 
 func (r UserRepo) WithTx(txHandle *gorm.DB) UserRepo {

@@ -26,6 +26,14 @@ func (r *ProductRepo) FindAll() ([]*model.Product, error) {
 	return products, nil
 }
 
+func (r *ProductRepo) DeleteByIDs(ids []string) error {
+	var products []*model.Product
+	if err := r.DB.Where("id IN ?", ids).Delete(&products).Error; err != nil {
+		return CommonError.ErrInternalServerError
+	}
+	return nil
+}
+
 func (r ProductRepo) WithTx(txHandle *gorm.DB) ProductRepo {
 	if txHandle == nil {
 		log.Println("no transaction db found")
