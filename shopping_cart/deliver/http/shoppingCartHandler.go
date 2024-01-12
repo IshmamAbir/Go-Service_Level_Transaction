@@ -16,12 +16,12 @@ func NewShoppingCartHandler(shoppingCartUsecase usecase.ShoppingCartUsecase, rou
 	handler := &ShoppingCartHandler{
 		ShoppingCartUsecase: shoppingCartUsecase,
 	}
-	subroute := router.PathPrefix("/shopping_cart").Subrouter()
-	subroute.HandleFunc("/", handler.GetAll).Methods("GET")
+	subroute := router.PathPrefix("/shopping-cart").Subrouter()
+	subroute.HandleFunc("", handler.GetAll).Methods("GET")
 }
 
 func (h *ShoppingCartHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	shoppingCarts, err := h.ShoppingCartUsecase.FindAll()
+	shoppingCarts, err := h.ShoppingCartUsecase.FindAll(r.Context())
 	if err != nil {
 		// http.Error(w, err.Error(), http.StatusInternalServerError)
 		response.Render(w, err, nil)
