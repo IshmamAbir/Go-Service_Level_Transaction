@@ -1,11 +1,12 @@
 package repository
 
 import (
-	"log"
+	"context"
 
 	"gorm.io/gorm"
 	CommonError "main.go/errors"
 	"main.go/model"
+	"main.go/transaction"
 )
 
 type ShoppingCartRepo struct {
@@ -18,25 +19,24 @@ func NewShoppingCartRepo(db *gorm.DB) *ShoppingCartRepo {
 	}
 }
 
-func (r ShoppingCartRepo) WithTx(txHandle *gorm.DB) ShoppingCartRepo {
-	if txHandle == nil {
-		log.Println("no transaction db found")
-		return r
+func (r ShoppingCartRepo) Create(ctx context.Context, shoppingCart *model.ShoppingCart) error {
+	tx, ok := transaction.GetTx(ctx)
+	if !ok {
+		tx = r.DB
 	}
-	r.DB = txHandle
-	return r
-}
-
-func (r ShoppingCartRepo) Create(shoppingCart *model.ShoppingCart) error {
-	if err := r.DB.Create(&shoppingCart).Error; err != nil {
+	if err := tx.Create(&shoppingCart).Error; err != nil {
 		return CommonError.ErrInternalServerError
 	}
 	return nil
 }
 
-func (r ShoppingCartRepo) FindAll() ([]*model.ShoppingCart, error) {
+func (r ShoppingCartRepo) FindAll(ctx context.Context) ([]*model.ShoppingCart, error) {
+	tx, ok := transaction.GetTx(ctx)
+	if !ok {
+		tx = r.DB
+	}
 	var shoppingCarts []*model.ShoppingCart
-	if err := r.DB.Find(&shoppingCarts).Error; err != nil {
+	if err := tx.Find(&shoppingCarts).Error; err != nil {
 		return nil, CommonError.ErrInternalServerError
 	}
 	return shoppingCarts, nil

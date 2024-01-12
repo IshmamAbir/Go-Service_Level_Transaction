@@ -46,37 +46,12 @@ Also, writting test case would be difficult. As the process is a business requir
 
 As service level dont contain database logic and separate repository methods are called inside the service method, it is unable to set the transaction in service that we have seen in the example of first section. We have to create a middleware for this.
 
-### Transaction Middleware
+### transaction.go
 
-For creating Transaction in business layer, a middleware `DBTransactionMiddleware()` method is created where we pass the handler function along with the gorm db initializer which handles the transaction part and `Commit()` the complete process. But if the handler returns anything rather than a `http.StatusOk` or `http.StatusCreated`, it call the
-`Rollback()` method and takes back all the entry.
-
-### Calling Middleware
-
-Call the transaction middleware in the handleFunc.
-
-```bash
-router.HandleFunc("/order-product", transaction.DBTransactionMiddleware(gorm.Db, <PurchaseProduct handler>)).Methods("POST")
-```
-
-### `WithTx()` method
-
-This method assign the same `*gorm.DB` initializer to all the repositories where the service method will make an effect. call this method before calling the `purchaseProduct()` . for example
-
-```bash
-err := userUsecase.WithTx(txHandle).PurchaseProduct(orderRequest);
-```
-
-or we can call it separately one after another.
-
-```bash
-txHandleErr := userUsecase.WithTx(txHandle)
-purchaseErr := userUsecase.PurchaseProduct(orderRequest);
-```
+This file contains the code for creating a UoW(unit of work) middleware for managing the transaction in the service layer level.
 
 ## Reference
 
-- [Using Gin Framework](https://articles.wesionary.team/implement-database-transactions-with-repository-pattern-golang-gin-and-gorm-application-907517fd0743)
 - [Instructions in Japanese | 日本語で README](README-JP.md)
 
 ## Authors

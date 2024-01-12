@@ -1,11 +1,12 @@
 package repository
 
 import (
-	"log"
+	"context"
 
 	"gorm.io/gorm"
 	CommonError "main.go/errors"
 	"main.go/model"
+	"main.go/transaction"
 )
 
 type ProductRepo struct {
@@ -18,38 +19,41 @@ func NewProductsRepo(db *gorm.DB) *ProductRepo {
 	}
 }
 
-func (r *ProductRepo) FindAll() ([]*model.Product, error) {
+func (r *ProductRepo) FindAll(ctx context.Context) ([]*model.Product, error) {
+	tx, ok := transaction.GetTx(ctx)
+	if !ok {
+		tx = r.DB
+	}
 	var products []*model.Product
-	if err := r.DB.Find(&products).Error; err != nil {
+	if err := tx.Find(&products).Error; err != nil {
 		return nil, CommonError.ErrInternalServerError
 	}
 	return products, nil
 }
 
-func (r ProductRepo) WithTx(txHandle *gorm.DB) ProductRepo {
-	if txHandle == nil {
-		log.Println("no transaction db found")
-		return r
+func (r *ProductRepo) FindById(ctx context.Context, productId int) (*model.Product, error) {
+	tx, ok := transaction.GetTx(ctx)
+	if !ok {
+		tx = r.DB
 	}
-	r.DB = txHandle
-	return r
-}
-
-func (r *ProductRepo) FindById(productId int) (*model.Product, error) {
 	var product model.Product
-	if err := r.DB.First(&product, productId).Error; err != nil {
+	if err := tx.First(&product, productId).Error; err != nil {
 		return nil, CommonError.ErrNotFound
 	}
 	return &product, nil
 }
 
-func (r ProductRepo) ReduceStockAmount(productId int, amount int) error {
+func (r ProductRepo) ReduceStockAmount(ctx context.Context, productId int, amount int) error {
+	tx, ok := transaction.GetTx(ctx)
+	if !ok {
+		tx = r.DB
+	}
 	product := model.Product{}
-	if err := r.DB.First(&product, productId).Error; err != nil {
+	if err := tx.First(&product, productId).Error; err != nil {
 		return CommonError.ErrNotFound
 	}
 	product.Stock -= amount
-	if err := r.DB.Save(&product).Error; err != nil {
+	if err := tx.Save(&product).Error; err != nil {
 		return CommonError.ErrInternalServerError
 	}
 	return nil

@@ -46,33 +46,9 @@ tx.Commit()
 
 サービスレベルにはデータベースロジックが含まれておらず、サービスメソッド内で別々のリポジトリメソッドが呼び出されるため、最初のセクションの例で見たようなトランザクションをサービス内で設定することはできません。このため、ミドルウェアを作成する必要があります。
 
-### トランザクションミドルウェア
+### transaction.go
 
-ビジネスレイヤーにトランザクションを作成するために、ミドルウェア `DBTransactionMiddleware()` メソッドを作成し、トランザクションを処理するハンドラ関数と gorm db のイニシャライザを渡して `Commit()` を実行します。しかし、ハンドラが `http.StatusOk` や `http.StatusCreated` ではなく何かを返した場合は
-Rollback()`メソッドを呼び出して、すべてのエントリを取り直します。
-
-### ミドルウェアの呼び出し
-
-handleFunc でトランザクションミドルウェアを呼び出す。
-
-```bash
-router.HandleFunc("/order-product", transaction.DBTransactionMiddleware(gorm.Db, <PurchaseProduct handler>)).Methods("POST")
-```
-
-### `WithTx()` メソッド
-
-このメソッドは、サービスメソッドが効果を発揮するすべてのリポジトリに同じ `*gorm.DB` イニシャライザを割り当てます。
-
-```bash
-err := userUsecase.WithTx(txHandle).PurchaseProduct(orderRequest)；
-```
-
-または、個別に呼び出すこともできます。
-
-```bash
-txHandleErr := userUsecase.WithTx(txHandle)
-purchaseErr := userUsecase.PurchaseProduct(orderRequest)；
-```
+このファイルには、サービス層レベルでトランザクションを管理するための UoW (Unit of Work) ミドルウェアを作成するためのコードが含まれています。
 
 ## 参照
 
