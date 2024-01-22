@@ -39,7 +39,7 @@ func main() {
 
 	_ProductHandler.NewProductHandler(*productUsecase, router)
 	_ShoppingCartHandler.NewShoppingCartHandler(*shoppingCartUsecase, router)
-	_UserHandler.NewUserHandler(*userUsecase, router, db)
+	_UserHandler.NewUserHandler(*userUsecase, router)
 
 	println("server running")
 	println("--------------------")

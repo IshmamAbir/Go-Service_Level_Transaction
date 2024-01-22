@@ -8,20 +8,17 @@ import (
 	"main.go/response"
 
 	"github.com/gorilla/mux"
-	"gorm.io/gorm"
 	"main.go/requests"
 	"main.go/user/usecase"
 )
 
 type UserHandler struct {
 	userUsecase usecase.UserUsecase
-	Db          *gorm.DB
 }
 
-func NewUserHandler(userUsecase usecase.UserUsecase, router *mux.Router, db *gorm.DB) {
+func NewUserHandler(userUsecase usecase.UserUsecase, router *mux.Router) {
 	handler := &UserHandler{
 		userUsecase: userUsecase,
-		Db:          db,
 	}
 	subroute := router.PathPrefix("/users").Subrouter()
 	subroute.HandleFunc("", handler.GetAll).Methods("GET")
